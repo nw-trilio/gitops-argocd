@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tvk-config-source
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/nw-trilio/gitops-argocd.git
+    targetRevision: main
+    path: tvk-config/source
+    directory:
+      recurse: true
+  destination:
+    name: source-cluster
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }   # set prune: true once trusted
+    syncOptions:
+      - SkipDryRunOnMissingResource=true
+      - ServerSideApply=true
+    retry:
+      limit: 10   # keeps retrying while the operator, CRDs and webhooks come up
+      backoff: { duration: 30s, factor: 2, maxDuration: 5m }

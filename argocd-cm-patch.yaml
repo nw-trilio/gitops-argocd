@@ -1,0 +1,23 @@
+# Merge into the argocd-cm ConfigMap of the Argo CD instance that manages TVK.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+data:
+  application.resourceTrackingMethod: annotation
+
+  # TVK Target: Healthy only once TVK has validated it.
+  resource.customizations.health.triliovault.trilio.io_Target: |
+    hs = {status = "Progressing", message = "Waiting for Target validation"}
+    if obj.status ~= nil and obj.status.status ~= nil then
+      if obj.status.status == "Available" then
+        hs.status = "Healthy"; hs.message = "Target is available"
+      elseif obj.status.status == "Unavailable" then
+        hs.status = "Degraded"; hs.message = "Target validation failed"
+      end
+    end
+    return hs
+
+  # Deliberately NO health check for BackupPlan: it reports Unavailable
+  # while a backup runs, which would mark the Application Degraded.

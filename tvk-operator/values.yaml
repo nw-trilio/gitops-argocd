@@ -1,0 +1,5 @@
+# Helm values for the TVK operator on every cluster. Per-cluster overrides go in values-<cluster>.yaml.
+# Check keys against `helm show values` for the pinned chart version.
+installTVK:
+  enabled: true
+  tvkInstanceName: tvk

@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tvk-operator-source
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://charts.k8strilio.net/trilio-stable/k8s-triliovault-operator
+      chart: k8s-triliovault-operator
+      targetRevision: 5.4.1   # pin; upgrade via PR
+      helm:
+        ignoreMissingValueFiles: true
+        valueFiles:
+          - $values/tvk-operator/values.yaml
+          - $values/tvk-operator/values-source.yaml
+    - repoURL: https://github.com/nw-trilio/gitops-argocd.git
+      targetRevision: main
+      ref: values
+  destination:
+    name: source-cluster
+    namespace: trilio-system
+  syncPolicy:
+    automated: { prune: false, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
