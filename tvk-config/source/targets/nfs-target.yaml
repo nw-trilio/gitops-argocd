@@ -1,0 +1,17 @@
+# Keep in sync with tvk-config/site/targets/nfs-target.yaml: both clusters must use the same NFS export.
+# NFS Targets need no credentials Secret.
+apiVersion: triliovault.trilio.io/v1
+kind: Target
+metadata:
+  name: nfs-target
+  namespace: mysql
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  type: NFS
+  vendor: Other
+  nfsCredentials:
+    nfsExport: 34.118.233.171:/   # test NFS server (in-cluster); replace with your server:/path
+    nfsOptions: nfsvers=4
+  thresholdCapacity: 500Gi

@@ -1,0 +1,17 @@
+# Same Target as tvk-config/source/targets/nfs-target.yaml, plus enableBrowsing.
+apiVersion: triliovault.trilio.io/v1
+kind: Target
+metadata:
+  name: nfs-target
+  namespace: mysql
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  type: NFS
+  vendor: Other
+  nfsCredentials:
+    nfsExport: 34.118.233.171:/   # test NFS server (in-cluster); replace with your server:/path
+    nfsOptions: nfsvers=4
+  thresholdCapacity: 500Gi
+  enableBrowsing: true   # site only: browse backups for restore

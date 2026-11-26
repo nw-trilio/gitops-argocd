@@ -1,0 +1,8 @@
+# On the site cluster nothing else creates the mysql namespace; the Target and restores live here.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mysql
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
