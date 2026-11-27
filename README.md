@@ -1,7 +1,5 @@
 # TVK ArgoCD Example
 
-How to run TrilioVault for Kubernetes (TVK) with Argo CD: the guidelines first, then a working example.
-
 ## Part 1: Guidelines
 
 These apply to any TVK + Argo CD setup.
