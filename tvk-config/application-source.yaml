@@ -15,11 +15,18 @@ spec:
       recurse: true
   destination:
     name: source-cluster
+  # The TVK license key is set in the cluster, not in git: don't diff it and don't overwrite it.
+  ignoreDifferences:
+    - group: triliovault.trilio.io
+      kind: License
+      jsonPointers:
+        - /spec/key
   syncPolicy:
     automated: { prune: false, selfHeal: true }   # set prune: true once trusted
     syncOptions:
       - SkipDryRunOnMissingResource=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
     retry:
       limit: 10   # keeps retrying while the operator, CRDs and webhooks come up
       backoff: { duration: 30s, factor: 2, maxDuration: 5m }
