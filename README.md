@@ -11,7 +11,7 @@ These apply to any TVK + Argo CD setup.
 | **Git holds intent only** | Commit Targets, Policies, Hooks and BackupPlans. Backups, Restores and Snapshots are runtime records created by TVK; in git, Argo CD would recreate or prune them. |
 | **Split operator and config** | Use one Application for the operator and one for the config, per cluster. Deleting or rebuilding the config then never removes the CRDs, which would delete every TVK resource. |
 | **Pin versions** | Pin the chart version and upgrade through a PR, so an upgrade is reviewed and can be rolled back. |
-| **No secrets in git** | Use External Secrets or Sealed Secrets. Values that can't reference a Secret, like the license key, are set in the cluster and ignored by Argo CD. |
+| **No secrets in git** | Use External Secrets or Sealed Secrets, and reference the Secret from the resource. The TVK License does this with `spec.secretRef` (TVK 5.3.0+). |
 | **Protect backup resources** | Put `Prune=false,Delete=false` on Targets and BackupPlans, and start with `prune: false`. A bad commit then can't wipe your backup config. |
 | **Order with sync waves** | Target, then Policies and Hooks, then BackupPlans. Each depends on the one before it. |
 | **Retry, don't block** | Use `SkipDryRunOnMissingResource=true` and `retry` on config apps, so they sync once the operator's CRDs and webhooks are ready. |
@@ -51,7 +51,7 @@ Operator and config are separate Applications, so removing the config never dele
 | Change schedule or retention | Edit `policies/daily.yaml` or `keep-7.yaml`, then open a PR. |
 | Protect another app | Add `backupplans/<app>.yaml`. Argo CD picks it up. |
 | Upgrade TVK | Bump `targetRevision` in `tvk-operator/application-*.yaml`. |
-| Keep secrets out of git | MySQL passwords come from External Secrets. The license key is set in the cluster. |
+| Keep secrets out of git | MySQL passwords and the TVK license key come from External Secrets. |
 
 ### Repo layout
 
@@ -66,7 +66,7 @@ mysql/
 tvk-config/
   application-{source,site}.yaml
   source/
-    license.yaml            # placeholder key
+    license.yaml            # ExternalSecret + License (secretRef)
     targets/nfs-target.yaml
     policies/{daily,keep-7}.yaml
     backupplans/mysql.yaml
@@ -96,18 +96,16 @@ done
 kubectl -n argocd apply -f mysql/application.yaml
 ```
 
-**2. Set the license key.** Argo CD ignores `spec.key`, so this value stays put.
-
-```sh
-kubectl --context source-cluster -n trilio-system patch license tvk-license \
-  --type merge -p "{\"spec\":{\"key\":\"$(cat tvk-license.key)\"}}"
-```
+**2. Store the license key** in your secret store at the path `tvk-config/source/license.yaml` reads
+(`tvk/source`, property `license`). External Secrets writes it to the `tvk-license` Secret under
+the key `trilioLicense`, which the License references.
 
 ### Sync order
 
 | Wave | Resource |
 | --- | --- |
 | -1 | `mysql` Namespace (site) |
+| -1 | License ExternalSecret (source) |
 | 0 | License (source) |
 | 1 | Shared Target, waits until `Available` |
 | 2 | Policies |
@@ -121,7 +119,7 @@ kubectl --context source-cluster -n trilio-system patch license tvk-license \
 | `mysql/manifests/mysql-credentials.yaml` | Secret store and `remoteRef.key` |
 | `mysql/manifests/statefulset.yaml` | Image, StorageClass, PVC size |
 | `*/application*.yaml` | `repoURL`, if you fork |
-| `tvk-config/source/license.yaml` | Key, in the cluster only |
+| `tvk-config/source/license.yaml` | Secret store and `remoteRef.key` |
 
 ### In this repo
 

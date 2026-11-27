@@ -1,6 +1,24 @@
-# TVK License for the source cluster. The key is secret, so git holds only a placeholder.
-# Set the real key in the cluster (see README, "License"); tvk-config-source ignores spec.key,
-# so Argo CD never overwrites it with the placeholder.
+# TVK License for the source cluster. The key lives in a Secret pulled from the central store by
+# External Secrets; the License only references it (spec.secretRef, TVK 5.3.0+). Nothing sensitive is in git.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: tvk-license
+  namespace: trilio-system   # must match the License namespace
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"   # before the License
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: platform-secrets          # replace with your store
+  target:
+    name: tvk-license
+    creationPolicy: Owner
+  data:
+    - secretKey: trilioLicense      # key name TVK expects
+      remoteRef: { key: tvk/source, property: license }   # replace with your path
+---
 apiVersion: triliovault.trilio.io/v1
 kind: License
 metadata:
@@ -10,4 +28,6 @@ metadata:
     argocd.argoproj.io/sync-wave: "0"   # before the Target
     argocd.argoproj.io/sync-options: Prune=false,Delete=false
 spec:
-  key: REPLACE_IN_CLUSTER   # never commit the real key
+  secretRef:
+    name: tvk-license        # Secret above; must hold the key "trilioLicense"
+    namespace: trilio-system
